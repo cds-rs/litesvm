@@ -20,11 +20,34 @@ pub struct TransactionMetadata {
     pub compute_units_consumed: u64,
     pub return_data: TransactionReturnData,
     pub fee: u64,
+
+    /// Execution account frame for [`Self::inner_instructions`].
+    ///
+    /// Inner-instruction indices are execution-relative, not message-relative.
+    /// Resolve them against this list.
+    pub account_keys: Vec<Address>,
 }
 
 impl TransactionMetadata {
     pub fn pretty_logs(&self) -> String {
         format_logs(&self.logs)
+    }
+
+    /// Resolve an [`Self::inner_instructions`] account index against
+    /// [`Self::account_keys`].
+    ///
+    /// Returns `None` for out-of-range indices; inner-instruction metadata is
+    /// best-effort and may reference accounts unavailable to the caller.
+    pub fn resolve_account(&self, index: u8) -> Option<&Address> {
+        self.account_keys.get(index as usize)
+    }
+
+    /// The program a given inner instruction invoked, resolved against
+    /// [`Self::account_keys`]. `outer` indexes the top-level instruction, `inner`
+    /// the inner instruction beneath it. `None` if either index is out of range.
+    pub fn inner_instruction_program(&self, outer: usize, inner: usize) -> Option<&Address> {
+        let ix = self.inner_instructions.get(outer)?.get(inner)?;
+        self.resolve_account(ix.instruction.program_id_index)
     }
 
     pub fn cpi_tree(&self) -> Vec<crate::cpi_tree::CpiFrame> {
@@ -96,6 +119,35 @@ mod tests {
             "unexpected header: {out}"
         );
     }
+
+    #[test]
+    fn inner_instruction_indices_resolve_against_account_keys_never_panicking() {
+        use solana_message::{compiled_instruction::CompiledInstruction, inner_instruction::InnerInstruction};
+
+        let loader = Address::new_from_array([10u8; 32]);
+        let mut meta = TransactionMetadata::default();
+        // Two static message keys, then a loader appended past them: the
+        // program-upgrade-via-CPI shape, where the inner instr's program
+        // index (2) is out of bounds against a 2-key message but valid here.
+        meta.account_keys = vec![
+            Address::new_from_array([0u8; 32]),
+            Address::new_from_array([1u8; 32]),
+            loader,
+        ];
+        meta.inner_instructions = vec![vec![InnerInstruction {
+            instruction: CompiledInstruction::new_from_raw_parts(2, vec![], vec![]),
+            stack_height: 2,
+        }]];
+
+        // Resolves the appended index to the loader, where naive indexing of a
+        // 2-key message would have read out of bounds.
+        assert_eq!(meta.inner_instruction_program(0, 0), Some(&loader));
+        // Out-of-range indices yield None, not a panic (agave's never-panic
+        // idiom, surfaced as something the caller can branch on). Problem
+        // for another day.
+        assert_eq!(meta.resolve_account(99), None);
+        assert_eq!(meta.inner_instruction_program(5, 0), None);
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -132,6 +184,9 @@ pub(crate) struct ExecutionResult {
     pub(crate) signature: Signature,
     pub(crate) compute_units_consumed: u64,
     pub(crate) inner_instructions: InnerInstructionsList,
+    /// The execution account frame the `inner_instructions` indices reference;
+    /// carried onto [`TransactionMetadata::account_keys`].
+    pub(crate) account_keys: Vec<Address>,
     pub(crate) return_data: TransactionReturnData,
     /// Whether the transaction can be included in a block
     pub(crate) included: bool,
@@ -146,6 +201,7 @@ impl Default for ExecutionResult {
             signature: Default::default(),
             compute_units_consumed: Default::default(),
             inner_instructions: Default::default(),
+            account_keys: Default::default(),
             return_data: Default::default(),
             included: false,
             fee: 0,

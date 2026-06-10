@@ -1501,6 +1501,7 @@ impl LiteSVM {
             signature,
             compute_units_consumed,
             inner_instructions,
+            account_keys,
             return_data,
             included,
             fee,
@@ -1515,6 +1516,7 @@ impl LiteSVM {
         let meta = TransactionMetadata {
             logs,
             inner_instructions,
+            account_keys,
             compute_units_consumed,
             return_data,
             signature,
@@ -1554,6 +1556,7 @@ impl LiteSVM {
             signature,
             compute_units_consumed,
             inner_instructions,
+            account_keys,
             return_data,
             fee,
             ..
@@ -1569,6 +1572,7 @@ impl LiteSVM {
             signature,
             logs,
             inner_instructions,
+            account_keys,
             compute_units_consumed,
             return_data,
             fee,
@@ -1823,13 +1827,14 @@ fn execution_result_if_context(
     compute_units_consumed: u64,
     fee: u64,
 ) -> ExecutionResult {
-    let (signature, return_data, inner_instructions, post_accounts) =
+    let (signature, return_data, inner_instructions, post_accounts, execution_account_keys) =
         execute_tx_helper(sanitized_tx, ctx);
     ExecutionResult {
         tx_result: result,
         signature,
         post_accounts,
         inner_instructions,
+        account_keys: execution_account_keys,
         compute_units_consumed,
         return_data,
         included: true,
@@ -1845,6 +1850,7 @@ fn execute_tx_helper(
     solana_transaction_context::TransactionReturnData,
     InnerInstructionsList,
     Vec<(Address, AccountSharedData)>,
+    Vec<Address>,
 ) {
     let signature = sanitized_tx.signature().to_owned();
     let inner_instructions = inner_instructions_list_from_instruction_trace(&ctx);
@@ -1855,12 +1861,50 @@ fn execute_tx_helper(
         accounts_resize_delta: _,
     } = ctx.into();
     let msg = sanitized_tx.message();
+
+    // Let's test this theory!
+    // Execution-order account list. Inner instruction indices are against this,
+    // not message keys; Agave appends loader/program-owner accounts past the
+    // static keys. Preserve it so indices remain resolvable by callers.
+    let execution_account_keys: Vec<Address> = accounts.iter().map(|(key, _)| *key).collect();
+
+    // Agave treats unresolved inner-instruction indices as metadata noise. It
+    // don't care bro. Log when an index escapes the static key set so
+    // consumers know to resolve against TransactionMetadata::account_keys.
+    if log::log_enabled!(log::Level::Debug) {
+        let static_key_count = msg.account_keys().len();
+        for (outer, inners) in inner_instructions.iter().enumerate() {
+            for inner in inners {
+                let idx = inner.instruction.program_id_index as usize;
+                if idx >= static_key_count {
+                    let unknown = "<unknown>";
+                    let program: &dyn std::fmt::Display = match execution_account_keys.get(idx) {
+                        Some(key) => key,
+                        None => &unknown,
+                    };
+                    log::debug!(
+                        "Oopsie, inner instruction (outer index {outer}) program index {idx} refers to a \
+                         loaded program account beyond the {static_key_count} static keys: \
+                         {program}; resolve it against TransactionMetadata::account_keys, not the \
+                         message keys",
+                    );
+                }
+            }
+        }
+    }
+
     let post_accounts = accounts
         .into_iter()
         .enumerate()
         .filter_map(|(idx, pair)| msg.is_writable(idx).then_some(pair))
         .collect();
-    (signature, return_data, inner_instructions, post_accounts)
+    (
+        signature,
+        return_data,
+        inner_instructions,
+        post_accounts,
+        execution_account_keys,
+    )
 }
 
 fn get_compute_budget_limits(
