@@ -46,7 +46,7 @@
 	"scripts": {
 		"artifacts": "napi artifacts",
 		"build": "napi build --platform --release --output-dir litesvm --dts internal.d.ts --js internal.js",
-		"build:debug": "napi build --platform litesvm --dts internal.d.ts --js internal.js",
+		"build:debug": "napi build --platform --output-dir litesvm --dts internal.d.ts --js internal.js",
 		"prepublishOnly": "napi prepublish -t npm",
 		"fmt": "yarn fmt:rust && yarn fmt:js",
 		"fmt:rust": "cargo fmt",
