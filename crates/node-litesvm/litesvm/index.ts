@@ -246,9 +246,9 @@ export class LiteSVM {
 		return inner === null
 			? { exists: false, address }
 			: ({
-				exists: true,
-				...toEncodedAccount(address, inner),
-			} as MaybeEncodedAccount);
+					exists: true,
+					...toEncodedAccount(address, inner),
+			  } as MaybeEncodedAccount);
 	}
 
 	/**
@@ -320,7 +320,7 @@ export class LiteSVM {
 	 */
 	setTransactionMessageLifetimeUsingLatestBlockhash<
 		TTransactionMessage extends TransactionMessage &
-		Partial<TransactionMessageWithLifetime>,
+			Partial<TransactionMessageWithLifetime>,
 	>(
 		transactionMessage: TTransactionMessage,
 	): ExcludeTransactionMessageLifetime<TTransactionMessage> &
