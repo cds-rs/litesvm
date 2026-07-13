@@ -19,6 +19,9 @@ impl ComputeBudget {
         self.0.compute_unit_limit
     }
 
+    /// Any u64 is accepted, but a limit above 2^53 will appear rounded in
+    /// the CPI tree: `CpiComputeUnits.availableAtStart` echoes this budget
+    /// as a JS number.
     #[napi(setter)]
     pub fn set_compute_unit_limit(&mut self, limit: BigInt) -> Result<()> {
         Ok(self.0.compute_unit_limit = bigint_to_u64(&limit)?)

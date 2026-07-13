@@ -613,6 +613,7 @@ module.exports.TransactionErrorInsufficientFundsForRent = nativeBinding.Transact
 module.exports.TransactionErrorProgramExecutionTemporarilyRestricted = nativeBinding.TransactionErrorProgramExecutionTemporarilyRestricted
 module.exports.TransactionMetadata = nativeBinding.TransactionMetadata
 module.exports.TransactionReturnData = nativeBinding.TransactionReturnData
+module.exports.cpiTree = nativeBinding.cpiTree
 module.exports.InstructionErrorFieldless = nativeBinding.InstructionErrorFieldless
 module.exports.SlotHistoryCheck = nativeBinding.SlotHistoryCheck
 module.exports.TransactionErrorFieldless = nativeBinding.TransactionErrorFieldless

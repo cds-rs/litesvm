@@ -1974,6 +1974,7 @@ dependencies = [
  "agave-feature-set",
  "bv",
  "litesvm",
+ "litesvm-cpi-tree",
  "napi",
  "napi-build",
  "napi-derive",

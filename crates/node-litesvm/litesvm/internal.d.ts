@@ -58,6 +58,11 @@ export declare class CompiledInstruction {
 export declare class ComputeBudget {
   constructor()
   get computeUnitLimit(): bigint
+  /**
+   * Any u64 is accepted, but a limit above 2^53 will appear rounded in
+   * the CPI tree: `CpiComputeUnits.availableAtStart` echoes this budget
+   * as a JS number.
+   */
   set computeUnitLimit(limit: bigint)
   set log64Units(val: bigint)
   get log64Units(): bigint
@@ -521,6 +526,7 @@ export declare class TransactionErrorProgramExecutionTemporarilyRestricted {
 export declare class TransactionMetadata {
   signature(): Uint8Array
   logs(): Array<string>
+  cpiTree(): Array<CpiFrame>
   innerInstructions(): Array<Array<InnerInstruction>>
   computeUnitsConsumed(): bigint
   returnData(): TransactionReturnData
@@ -533,6 +539,46 @@ export declare class TransactionReturnData {
   data(): Uint8Array
   toString(): string
 }
+
+/**
+ * CU values are JS numbers, not bigints, so the whole tree survives
+ * `JSON.stringify`. Exact up to 2^53; only `availableAtStart` can
+ * exceed that (see its doc).
+ */
+export interface CpiComputeUnits {
+  /** CU consumed by this frame, cumulative over its children. */
+  consumed: number
+  /**
+   * CU remaining in the transaction budget when this frame started.
+   * This echoes the configured budget rather than measuring work, and
+   * LiteSVM accepts budgets up to u64::MAX (`ComputeBudget.computeUnitLimit`),
+   * so values above 2^53 are reachable and round to the nearest
+   * representable number here.
+   */
+  availableAtStart: number
+}
+
+export interface CpiFrame {
+  /** Base58 program address, as it appears in the log lines. */
+  programId: string
+  outcome: CpiOutcome
+  computeUnits?: CpiComputeUnits
+  instructionName?: string
+  logs: Array<CpiFrameLog>
+  children: Array<CpiFrame>
+}
+
+export type CpiFrameLog =
+  | { type: 'msg', value: string }
+  | { type: 'data', value: string }
+
+export type CpiOutcome =
+  | { type: 'success' }
+  | { type: 'failed', message?: string }
+  | { type: 'truncated' }
+
+/** Parse Solana transaction logs into a CPI call tree. */
+export declare function cpiTree(logs: Array<string>): Array<CpiFrame>
 
 export declare const enum InstructionErrorFieldless {
   GenericError = 0,

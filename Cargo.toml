@@ -14,6 +14,7 @@ rust-version = "1.89.0"
 agave-feature-set = "4.1.1"
 agave-precompiles = "4.1.1"
 agave-reserved-account-keys = "4.1.1"
+litesvm-cpi-tree = { path = "crates/cpi-tree", version = "0.14" }
 solana-syscalls = "4.1.1"
 ansi_term = "0.12"
 bv = "0.11.1"

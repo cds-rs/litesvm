@@ -1,6 +1,7 @@
 use {
     crate::{
         account::Account,
+        cpi_tree::CpiFrame,
         to_string_js,
         transaction_error::{convert_transaction_error, TransactionError},
     },
@@ -9,6 +10,7 @@ use {
         SimulatedTransactionInfo as SimulatedTransactionInfoOriginal,
         TransactionMetadata as TransactionMetadataOriginal,
     },
+    litesvm_cpi_tree::CpiTreeExt,
     napi::bindgen_prelude::*,
     solana_account::Account as AccountOriginal,
     solana_message::{
@@ -103,6 +105,11 @@ impl TransactionMetadata {
     #[napi]
     pub fn logs(&self) -> Vec<String> {
         self.0.logs.clone()
+    }
+
+    #[napi]
+    pub fn cpi_tree(&self) -> Vec<CpiFrame> {
+        self.0.cpi_tree().into_iter().map(Into::into).collect()
     }
 
     #[napi]

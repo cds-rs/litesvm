@@ -40,6 +40,7 @@ use {
 };
 mod account;
 mod compute_budget;
+mod cpi_tree;
 mod feature_set;
 mod native_mint;
 mod sysvar;
