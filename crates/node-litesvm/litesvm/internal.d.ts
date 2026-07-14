@@ -532,6 +532,12 @@ export declare class TransactionMetadata {
    * reporting the transaction's BPF CU and budget.
    */
   prettyCpiTree(): string
+  /**
+   * Like `prettyCpiTree`, but `programLabel` decides how each frame's
+   * program id is rendered (an alias, a hyperlink, ...). Called once
+   * per distinct program id, in tree order.
+   */
+  prettyCpiTreeWith(programLabel: (arg: string) => string): string
   innerInstructions(): Array<Array<InnerInstruction>>
   computeUnitsConsumed(): bigint
   returnData(): TransactionReturnData

@@ -127,4 +127,14 @@ test("TransactionMetadata.prettyCpiTree renders a live transaction", async () =>
 		rendered,
 		formatCpiTree(rendered.split("\n")[0], result.cpiTree()),
 	);
+
+	// The aliased variant keeps the header and swaps the frame label.
+	// Only the label: this program logs its own id via msg!, and that
+	// payload passes through untouched on the >> log: line.
+	const aliased = result.prettyCpiTreeWith((programId) =>
+		programId === programAddress ? "logger" : programId,
+	);
+	assert.strictEqual(aliased.split("\n")[0], rendered.split("\n")[0]);
+	assert.ok(rendered.split("\n")[1].endsWith(programAddress));
+	assert.ok(aliased.split("\n")[1].endsWith("logger"));
 });

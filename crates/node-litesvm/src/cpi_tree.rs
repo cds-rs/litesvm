@@ -180,7 +180,7 @@ pub fn format_cpi_tree_with(
     }))
 }
 
-fn collect_labels(
+pub(crate) fn collect_labels(
     frames: &[CpiFrameOriginal],
     program_label: &Function<String, String>,
     labels: &mut HashMap<Address, String>,

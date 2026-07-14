@@ -18,6 +18,7 @@ use {
         inner_instruction::InnerInstruction as InnerInstructionOriginal,
     },
     solana_transaction_context::transaction::TransactionReturnData as TransactionReturnDataOriginal,
+    std::collections::HashMap,
 };
 
 #[derive(Debug, Clone)]
@@ -117,6 +118,16 @@ impl TransactionMetadata {
     #[napi]
     pub fn pretty_cpi_tree(&self) -> String {
         self.0.pretty_cpi_tree()
+    }
+
+    /// Like `prettyCpiTree`, but `programLabel` decides how each frame's
+    /// program id is rendered (an alias, a hyperlink, ...). Called once
+    /// per distinct program id, in tree order.
+    #[napi]
+    pub fn pretty_cpi_tree_with(&self, program_label: Function<String, String>) -> Result<String> {
+        let mut labels = HashMap::new();
+        crate::cpi_tree::collect_labels(&self.0.cpi_tree(), &program_label, &mut labels)?;
+        Ok(self.0.pretty_cpi_tree_with(&|addr| labels[addr].clone()))
     }
 
     #[napi]
