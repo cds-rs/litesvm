@@ -112,6 +112,13 @@ impl TransactionMetadata {
         self.0.cpi_tree().into_iter().map(Into::into).collect()
     }
 
+    /// Render the CPI tree as `cargo tree`-style box art under a header
+    /// reporting the transaction's BPF CU and budget.
+    #[napi]
+    pub fn pretty_cpi_tree(&self) -> String {
+        self.0.pretty_cpi_tree()
+    }
+
     #[napi]
     pub fn inner_instructions(&self) -> Vec<Vec<InnerInstruction>> {
         self.0

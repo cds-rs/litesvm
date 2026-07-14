@@ -48,6 +48,8 @@ export {
 	EpochSchedule,
 	FailedTransactionMetadata,
 	FeatureSet,
+	formatCpiTree,
+	formatCpiTreeWith,
 	InnerInstruction,
 	Rent,
 	SlotHash,

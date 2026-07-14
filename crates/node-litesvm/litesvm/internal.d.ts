@@ -527,6 +527,11 @@ export declare class TransactionMetadata {
   signature(): Uint8Array
   logs(): Array<string>
   cpiTree(): Array<CpiFrame>
+  /**
+   * Render the CPI tree as `cargo tree`-style box art under a header
+   * reporting the transaction's BPF CU and budget.
+   */
+  prettyCpiTree(): string
   innerInstructions(): Array<Array<InnerInstruction>>
   computeUnitsConsumed(): bigint
   returnData(): TransactionReturnData
@@ -579,6 +584,20 @@ export type CpiOutcome =
 
 /** Parse Solana transaction logs into a CPI call tree. */
 export declare function cpiTree(logs: Array<string>): Array<CpiFrame>
+
+/**
+ * Render CPI frames as `cargo tree`-style box art under `header`.
+ * The header acts as a visible parent so a transaction's multiple
+ * top-level frames read as siblings.
+ */
+export declare function formatCpiTree(header: string, frames: Array<CpiFrame>): string
+
+/**
+ * Like `formatCpiTree`, but `programLabel` decides how each frame's
+ * program id is rendered (an alias, a hyperlink, ...). Called once per
+ * distinct program id, in tree order.
+ */
+export declare function formatCpiTreeWith(header: string, frames: Array<CpiFrame>, programLabel: (arg: string) => string): string
 
 export declare const enum InstructionErrorFieldless {
   GenericError = 0,
